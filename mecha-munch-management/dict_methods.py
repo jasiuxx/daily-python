@@ -44,9 +44,12 @@ def update_recipes(ideas, recipe_updates):
     Returns:
         dict: The updated "recipe ideas" dict.
     """
+    recipes = {}
+
     for update in recipe_updates:
-        ideas.setdefault(update[0], {}).update(update[1])
-    return ideas
+        recipes[update[0]] = update[1]
+
+    return ideas | recipes
 
 
 def sort_entries(cart):
@@ -77,8 +80,10 @@ def send_to_store(cart, aisle_mapping):
 
     store = dict(reversed(sorted(cart.items())))
 
-    for map in aisle_mapping:
-        store[map.key()] = [store[map.key()]] + [aisle_mapping[map.key()]]
+    for map in aisle_mapping.items():
+        if store.get(map[0]) is None:
+            continue
+        store[map[0]] = [store[map[0]]] + map[1]
 
     return store
 
@@ -94,17 +99,8 @@ def update_store_inventory(fulfillment_cart, store_inventory):
         dict: The store_inventory updated.
     """
 
-    pass
-
-
-print(
-    send_to_store(
-        {"Banana": 3, "Apple": 2, "Orange": 1, "Milk": 2},
-        {
-            "Banana": ["Aisle 5", False],
-            "Apple": ["Aisle 4", False],
-            "Orange": ["Aisle 4", False],
-            "Milk": ["Aisle 2", True],
-        },
-    )
-)
+    for item in fulfillment_cart.items():
+        store_inventory[item[0]][0] -= item[1][0]
+        if store_inventory[item[0]][0] == 0:
+            store_inventory[item[0]][0] = "Out of Stock"
+    return store_inventory
